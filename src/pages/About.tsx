@@ -196,7 +196,7 @@ const About = () => {
         </section>
 
         {/* Team Section */}
-        <section className="mb-20">
+        {/* <section className="mb-20">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Our Team</h2>
             <p className="text-gray-600 dark:text-gray-300">
@@ -216,7 +216,7 @@ const About = () => {
               </Card>
             ))}
           </div>
-        </section>
+        </section> */}
 
         {/* Contact Section */}
         <section className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-sm text-center">

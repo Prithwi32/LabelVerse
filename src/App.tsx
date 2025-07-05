@@ -18,6 +18,7 @@ import Contribution from "./pages/Contribution";
 import AdminPanel from "./pages/AdminPanel";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
+import ContributionDetails from "./pages/admin/ContributionsDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/contribute/:datasetId" element={<Contribution />} />
                   <Route path="/admin" element={<AdminPanel />} />
+                  <Route path="/admin/contributions/:id" element={<ContributionDetails />} />
                   <Route path="/about" element={<About />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>

@@ -1,54 +1,67 @@
-
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, FileText, Image, Mic, Video, AlertCircle } from 'lucide-react';
-import { Dataset, DataType, DatasetStatus } from '@/types';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
+import {
+  ArrowLeft,
+  Upload,
+  FileText,
+  Image,
+  Mic,
+  Video,
+  AlertCircle,
+} from "lucide-react";
+import { Dataset, DataType, DatasetStatus } from "@/types";
 
 const Contribution = () => {
   const { datasetId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [dataset, setDataset] = useState<Dataset | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [file, setFile] = useState<File | null>(null);
-  const [description, setDescription] = useState('');
-  const [textContent, setTextContent] = useState('');
+  const [description, setDescription] = useState("");
+  const [textContent, setTextContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Mock dataset data - in real app, fetch by ID
-  const mockDatasets: Record<string, Dataset> = {
-    '1': {
-      id: '1',
-      name: 'Tamil Voice Recognition',
-      description: 'High-quality Tamil voice recordings for speech recognition models',
-      dataType: DataType.AUDIO,
-      formatRequirements: 'WAV format, 16kHz, 60 seconds max',
-      sampleCountGoal: 10000,
-      currentSampleCount: 7500,
-      baseRewardPerSample: 0.5,
-      createdAt: '2024-01-15',
-      status: DatasetStatus.ACTIVE
-    },
-    '3': {
-      id: '3',
-      name: 'Sentiment Analysis Corpus',
-      description: 'Text samples with emotional sentiment labels',
-      dataType: DataType.TEXT,
-      formatRequirements: 'Plain text, 10-500 words, English only',
-      sampleCountGoal: 15000,
-      currentSampleCount: 3200,
-      baseRewardPerSample: 0.3,
-      createdAt: '2024-02-15',
-      status: DatasetStatus.ACTIVE
-    }
-  };
+  useEffect(() => {
+    const fetchDataset = async () => {
+      if (!datasetId) return;
 
-  const dataset = datasetId ? mockDatasets[datasetId] : null;
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/datasets/${datasetId}`
+        );
+        setDataset(response.data);
+      } catch (error) {
+        console.error("Error fetching dataset:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch dataset. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDataset();
+  }, [datasetId]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500 text-lg">Loading dataset...</p>
+      </div>
+    );
+  }
 
   if (!dataset) {
     return (
@@ -57,8 +70,10 @@ const Contribution = () => {
           <CardContent className="p-6 text-center">
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Dataset Not Found</h2>
-            <p className="text-gray-600 mb-4">The requested dataset could not be found.</p>
-            <Button onClick={() => navigate('/datasets')}>
+            <p className="text-gray-600 mb-4">
+              The requested dataset could not be found.
+            </p>
+            <Button onClick={() => navigate("/datasets")}>
               Back to Datasets
             </Button>
           </CardContent>
@@ -83,13 +98,13 @@ const Contribution = () => {
   const getAcceptedFileTypes = (dataType: DataType) => {
     switch (dataType) {
       case DataType.AUDIO:
-        return '.wav,.mp3,.m4a';
+        return ".wav,.mp3,.m4a";
       case DataType.IMAGE:
-        return '.png,.jpg,.jpeg';
+        return ".png,.jpg,.jpeg";
       case DataType.VIDEO:
-        return '.mp4,.mov,.avi';
+        return ".mp4,.mov,.avi";
       default:
-        return '';
+        return "";
     }
   };
 
@@ -100,84 +115,91 @@ const Contribution = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    // Validation
-    if (dataset.dataType !== DataType.TEXT && !file) {
-      toast({
-        title: "Error",
-        description: "Please select a file to upload.",
-        variant: "destructive"
-      });
-      setIsSubmitting(false);
-      return;
-    }
+  if (!dataset) return;
 
-    if (dataset.dataType === DataType.TEXT && !textContent.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter text content.",
-        variant: "destructive"
-      });
-      setIsSubmitting(false);
-      return;
-    }
+  const userId = "46449169-9daf-48a7-909f-92aff169419b"; // Replace this with the actual logged-in user's ID
 
-    // Simulate API call
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast({
-        title: "Success!",
-        description: "Your contribution has been submitted for verification.",
-      });
+  // Basic validation
+  if (dataset.dataType !== DataType.TEXT && !file) {
+    toast({
+      title: "Error",
+      description: "Please select a file to upload.",
+      variant: "destructive",
+    });
+    setIsSubmitting(false);
+    return;
+  }
 
-      // Reset form
-      setFile(null);
-      setDescription('');
-      setTextContent('');
-      
-      // Navigate to dashboard after success
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
-      
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to submit contribution. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  try {
+    const formData = new FormData();
+    formData.append("file", file!);
+    formData.append("userId", userId);
+    formData.append("datasetId", dataset.id);
+
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/contributions`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    toast({
+      title: "Success!",
+      description: "Your contribution has been submitted for verification.",
+    });
+
+    setFile(null);
+    setDescription("");
+    setTextContent("");
+
+    setTimeout(() => {
+      navigate("/dashboard");
+    }, 1500);
+  } catch (error: any) {
+    console.error("Contribution submission error:", error);
+    toast({
+      title: "Error",
+      description:
+        error?.response?.data?.message ||
+        "Failed to submit contribution. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/datasets')}
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/datasets")}
             className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Datasets
           </Button>
-          
+
           <div className="flex items-center space-x-3 mb-4">
             {getIcon(dataset.dataType)}
-            <h1 className="text-3xl font-bold text-gray-900">{dataset.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{dataset.name}</h1>
             <Badge className="bg-emerald-100 text-emerald-800">
               {dataset.status}
             </Badge>
           </div>
-          
-          <p className="text-gray-600">{dataset.description}</p>
+
+          <p className="text-gray-600 dark:text-gray-400">{dataset.description}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -201,8 +223,13 @@ const Contribution = () => {
                         rows={8}
                         className="mt-1"
                       />
-                      <p className="text-sm text-gray-500 mt-1">
-                        {textContent.split(' ').filter(word => word.length > 0).length} words
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {
+                          textContent
+                            .split(" ")
+                            .filter((word) => word.length > 0).length
+                        }{" "}
+                        words
                       </p>
                     </div>
                   )}
@@ -223,7 +250,9 @@ const Contribution = () => {
                           <div className="mt-2 p-3 bg-gray-50 rounded-md">
                             <div className="flex items-center space-x-2">
                               <Upload className="w-4 h-4 text-gray-500" />
-                              <span className="text-sm font-medium">{file.name}</span>
+                              <span className="text-sm font-medium">
+                                {file.name}
+                              </span>
                               <span className="text-sm text-gray-500">
                                 ({(file.size / 1024 / 1024).toFixed(2)} MB)
                               </span>
@@ -248,12 +277,14 @@ const Contribution = () => {
                   </div>
 
                   {/* Submit Button */}
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-violet-600 hover:bg-violet-700"
+                  <Button
+                    type="submit"
+                    className="w-full bg-violet-600 hover:bg-violet-700 dark:text-white"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? 'Submitting...' : `Submit Contribution (${dataset.baseRewardPerSample} tokens)`}
+                    {isSubmitting
+                      ? "Submitting..."
+                      : `Submit Contribution (${dataset.baseRewardPerSample} tokens)`}
                   </Button>
                 </form>
               </CardContent>
@@ -269,19 +300,28 @@ const Contribution = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h4 className="font-medium text-gray-900">Format Requirements</h4>
-                  <p className="text-sm text-gray-600">{dataset.formatRequirements}</p>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-500">
+                    Format Requirements
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-600">
+                    {dataset.formatRequirements || "No Requirements specified!"}
+                  </p>
                 </div>
-                
+
                 <div>
-                  <h4 className="font-medium text-gray-900">Reward per Sample</h4>
-                  <p className="text-sm text-gray-600">{dataset.baseRewardPerSample} tokens</p>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium text-gray-900">Progress</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-500">
+                    Reward per Sample
+                  </h4>
                   <p className="text-sm text-gray-600">
-                    {dataset.currentSampleCount} / {dataset.sampleCountGoal} samples
+                    {dataset.baseRewardPerSample} tokens
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-500">Progress</h4>
+                  <p className="text-sm text-gray-600">
+                    {dataset.currentSampleCount} / {dataset.sampleCountGoal}{" "}
+                    samples
                   </p>
                 </div>
               </CardContent>
@@ -290,7 +330,7 @@ const Contribution = () => {
             {/* Guidelines */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Success Criteria</CardTitle>
+                <CardTitle className="text-lg dark:text-gray-500">Success Criteria</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm text-gray-600">
@@ -323,19 +363,25 @@ const Contribution = () => {
                 <div className="space-y-3 text-sm text-gray-600">
                   <div className="flex items-center space-x-2">
                     <div className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-medium text-violet-600">1</span>
+                      <span className="text-xs font-medium text-violet-600">
+                        1
+                      </span>
                     </div>
                     <span>AI model analyzes your submission</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-medium text-violet-600">2</span>
+                      <span className="text-xs font-medium text-violet-600">
+                        2
+                      </span>
                     </div>
                     <span>Quality score is calculated</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-medium text-violet-600">3</span>
+                      <span className="text-xs font-medium text-violet-600">
+                        3
+                      </span>
                     </div>
                     <span>Tokens are awarded for verified contributions</span>
                   </div>

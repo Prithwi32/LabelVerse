@@ -42,6 +42,7 @@ export interface Dataset {
 }
 
 export interface Contribution {
+  dataType: DataType;
   id: string;
   userId: string;
   datasetId: string;
